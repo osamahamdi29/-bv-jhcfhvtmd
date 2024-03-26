@@ -9,64 +9,36 @@
 	 * Copyright 2019 DroidOXY ( http://www.droidoxy.com )
 	 */
 
-
-	$pagename = 'admin-profile';
-	$container = 'settings';
+	$pagename = 'payouts';
+	$container = 'payouts';
 	
 	include_once("core/init.inc.php");
-	
-	$data = false;
+	$valid = false;
 
     if (!admin::isSession()) {
 
         header("Location: index.php");
+        
+    }else if(isset($_GET['id'])){
 		
-    }else if(!empty($_POST) && !APP_DEMO){
-		
-		$old_pass = $_POST['old_pass'];
-		$new_pass = $_POST['new_pass'];
-		$cnf_pass = $_POST['cnf_pass'];
-		
-		$data = true;
-		
-		$settings = new settings($dbo);
-		$acid = admin::getAdminID();
-		
-		$result = $settings->changepass($acid, $old_pass, $new_pass, $cnf_pass);
-		
-		if($result == 420){
-			
-			$error = true;
-			$error_message = "Admin Not Found";
-			
-		}elseif($result == 422){
-			
-			$error = true;
-			$error_message = "New Password & Confirm Password do not Match";
-			
-		}elseif($result == 425){
-			
-			$error = true;
-			$error_message = "Incorrect Old Password";
-			
-		}elseif($result == 424){
-			
-			$error = true;
-			$error_message = "There was some issue changing the password";
-			
-		}elseif($result == 1){
-			
-			$error = false;
-			$error_message = "Password Changed Successfully";
-			
-		}
-		
-	}
-	
-	$acid = admin::getAdminID();
-	$configs = new functions($dbo);
-	$configs->updateConfigs(time(),'LAST_ADMIN_ACCESS');
-
+		$ID = $_GET['id'];
+		$configs = new functions($dbo);
+        $payout = new redeem($dbo);
+        $result = $payout->getSinglePayout($ID);
+        
+        if(isset($result['payout_id'])){
+            
+            $valid = true;
+        }
+        
+    }
+    
+    if(!$valid){
+        
+        header("Location: payouts.php");
+        
+    }
+    
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -126,103 +98,91 @@
                 <div class="row">
                     <div class="col-12">
                         <div class="section-title">
-                            <h4>Admin Profile</h4>
+                            <h4>Edit Redeem option Details</h4>
                         </div>
                     </div>
 					<?php if(APP_DEMO) { include_once 'inc/demo-notice.php'; } ?>
 					
 					<!-- START MAIN CONTENT HERE -->
 					
-					<div class="col-md-4">
-                        <div class="block mb-4" style="box-shadow: 0 7px 15px var(--primary-alpha-Dot25); transition: all 0.3s;">
-							<div class="user-profile-menu bg-white">
-								<div class="avatar-info">
-									<img class="profile-img rounded-circle" id="adminImage" align="middle" src="images/<?php echo $configs->getConfig('ADMIN_IMAGE'); ?>" alt="profile image" style="width: 168px; height: 168px;" />
-									<h4 class="name"><?php echo $helper->getAdminFullName($acid); ?></h4>
-									<p class="designation">Admin</p>
-								</div>
-							</div>
-							
-						</div>
-					</div>
-					
-                    <div class="col-md-8">
+                    <div class="col-md-12">
                         <div class="block form-block mb-4">
                             <div class="block-heading">
-                                <h5>Admin Details</h5>
+                                <h5>Edit Redeem</h5>
                             </div>
 
-                            <form action="process/profile.php" method="post" enctype="multipart/form-data" class="horizontal-form"/>
+                            <form action="process/edit-payout.php" method="post" enctype="multipart/form-data" class="horizontal-form" />
+                            
 							
                                 <div class="form-group">
                                     <div class="form-row">
-                                        <label class="col-md-3">Admin Name</label>
+                                        <label class="col-md-3">Redeem Name</label>
                                         <div class="col-md-9">
-                                            <input class="form-control" name="admin_name" placeholder="Full name" value="<?php echo $helper->getAdminFullName($acid); ?>" type="text" autocomplete="off" required=""/>
+                                            <input class="form-control" name="payout_id" type="text" value="<?php echo $result['payout_id']; ?>" hidden/>
+                                            <input class="form-control" name="payout_name" placeholder="Paypal" type="text" value="<?php echo $result['payout_title']; ?>" required=""/>
                                         </div>
                                     </div>
                                 </div>
 							
                                 <div class="form-group">
                                     <div class="form-row">
-                                        <label class="col-md-3">Admin Image</label>
+                                        <label class="col-md-3">Redeem SubTitle</label>
+                                        <div class="col-md-9">
+                                            <input class="form-control" name="payout_sub" placeholder="1000 Points = $1 USD" type="text" value="<?php echo $result['payout_subtitle']; ?>" required=""/>
+                                        </div>
+                                    </div>
+                                </div>
+							
+                                <div class="form-group">
+                                    <div class="form-row">
+                                        <label class="col-md-3">Redeem Image</label>
                                         <div class="col-md-9">
                                             <div class="input-group">
-                                                <input id="admin_image_name" class="form-control" type="text" name="admin_image_name" value="<?php echo $configs->getConfig('ADMIN_IMAGE'); ?>" placeholder="Choose Image" style="background: #e9ecef; " autocomplete="off" disabled/>
+                                                <input id="payout_image_name" class="form-control" type="text" name="payout_image_name" value="<?php echo basename($result['payout_thumbnail']); ?>" placeholder="Choose Image" style="background: #e9ecef; " autocomplete="off" disabled/>
 												<span class="input-group-addon text-dark"><label for="file-upload" class="custom-file-upload"><i class="ion-ios-folder"></i><span>Change Image</span></label>
-													<input id="file-upload" onchange="readURL(this);" name="admin_image" accept="image/png, image/jpeg, image/jpg" type="file"/>
+													<input id="file-upload" onchange="readURL(this);" name="payout_image" accept="image/png, image/jpeg, image/jpg" type="file"/>
 												</span>
 											</div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <hr />
-                                <button class="btn btn-primary mr-0 pull-right" type="submit" value="upload">Update Details</button>
-								<br><br>
-                            </form>
-                        </div>
-						
-                        <div class="block form-block mb-4">
-                            <div class="block-heading">
-                                <h5>Change Password</h5>
-                            </div>
 							
-							<?php if ($data){ ?>
-						
-								<div class="alert <?php if($error){ echo "alert-danger"; }else{ echo "alert-success"; } ?>">
-									<?php echo $error_message; ?>
-								</div>
-							
-							<?php } ?>
-
-                            <form action="" method="post" />
-                                
                                 <div class="form-group">
-                                    <label>Old Password</label>
-                                    <input class="form-control" placeholder="Old Password" type="password" name="old_pass" required=""/>
+                                    <div class="form-row">
+                                        <label class="col-md-3">Redeem Amount</label>
+                                        <div class="col-md-9">
+                                            <input class="form-control" name="payout_amount" type="text" value="<?php echo $result['payout_amount']; ?>" required=""/>
+                                        </div>
+                                    </div>
                                 </div>
-								
-                                <div class="form-row">
-                                    <div class="form-group col-md-6">
-                                        <label>New Password</label>
-                                        <input class="form-control" placeholder="New Password" type="password" name="new_pass" required=""/>
+							
+                                <div class="form-group">
+                                    <div class="form-row">
+                                        <label class="col-md-3">Points Require to Redeem</label>
+                                        <div class="col-md-9">
+                                            <input class="form-control" name="payout_points" type="number" placeholder="1000" value="<?php echo $result['payout_pointsRequired']; ?>" required=""/>
+                                        </div>
                                     </div>
-									
-                                    <div class="form-group col-md-6">
-                                        <label>Confirm New Password</label>
-                                        <input class="form-control" placeholder="Confirm New password" type="password" name="cnf_pass" required=""/>
+                                </div>
+							
+                                <div class="form-group">
+                                    <div class="form-row">
+                                        <label class="col-md-3">Message to user</label>
+                                        <div class="col-md-9">
+                                            <input class="form-control" name="payout_msg" type="text" value="<?php echo $result['payout_message']; ?>" required=""/>
+                                        </div>
                                     </div>
-									
                                 </div>
 
                                 <hr />
-                                <button class="btn btn-primary mr-0 pull-right" type="submit">Change Password</button>
+
+                                <button class="btn btn-primary mr-3 pull-right" type="submit">Save Settings</button>
 								<br><br>
+
                             </form>
                         </div>
                     </div>
-					
+	
 					
 					<!-- END MAIN CONTENT HERE -->
 					<?php include_once 'inc/support.php'; ?>
@@ -278,8 +238,8 @@
 
 <!--- Main JS -->
 <script src="./assets/js/main.js"></script>
-<script type="text/javascript">
 
+<script type="text/javascript">
 
 function readURL(input) {
 	
@@ -287,15 +247,9 @@ function readURL(input) {
 		
 		var reader = new FileReader();
 		
-		reader.onload = function (e) {
-			$('#adminImage')
-				.attr('src', e.target.result)
-				.width(168)
-				.height(168);
-			};
 		reader.readAsDataURL(input.files[0]);
-		$('#admin_image_name').val(input.files[0].name);
-		$('#admin_image_name').prop('disabled', false);
+		$('#payout_image_name').val(input.files[0].name);
+		$('#payout_image_name').prop('disabled', false);
 	}
 }
 

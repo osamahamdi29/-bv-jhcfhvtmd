@@ -1,72 +1,28 @@
 <?php
 
     /*!
-	 * POCKET v3.4
+	 * POCKET v3.7
 	 *
 	 * http://www.droidoxy.com
 	 * support@droidoxy.com
 	 *
-	 * Copyright 2019 DroidOXY ( http://www.droidoxy.com )
+	 * Copyright 2020 DroidOXY ( http://www.droidoxy.com )
 	 */
 
-
-	$pagename = 'admin-profile';
+	$pagename = 'postbacks';
 	$container = 'settings';
 	
 	include_once("core/init.inc.php");
-	
-	$data = false;
 
     if (!admin::isSession()) {
 
         header("Location: index.php");
-		
-    }else if(!empty($_POST) && !APP_DEMO){
-		
-		$old_pass = $_POST['old_pass'];
-		$new_pass = $_POST['new_pass'];
-		$cnf_pass = $_POST['cnf_pass'];
-		
-		$data = true;
-		
-		$settings = new settings($dbo);
-		$acid = admin::getAdminID();
-		
-		$result = $settings->changepass($acid, $old_pass, $new_pass, $cnf_pass);
-		
-		if($result == 420){
-			
-			$error = true;
-			$error_message = "Admin Not Found";
-			
-		}elseif($result == 422){
-			
-			$error = true;
-			$error_message = "New Password & Confirm Password do not Match";
-			
-		}elseif($result == 425){
-			
-			$error = true;
-			$error_message = "Incorrect Old Password";
-			
-		}elseif($result == 424){
-			
-			$error = true;
-			$error_message = "There was some issue changing the password";
-			
-		}elseif($result == 1){
-			
-			$error = false;
-			$error_message = "Password Changed Successfully";
-			
-		}
-		
-	}
+    }
 	
-	$acid = admin::getAdminID();
 	$configs = new functions($dbo);
 	$configs->updateConfigs(time(),'LAST_ADMIN_ACCESS');
-
+    $url  = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
+    $url .= $_SERVER['SERVER_NAME'].= $_SERVER['REQUEST_URI'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -126,103 +82,96 @@
                 <div class="row">
                     <div class="col-12">
                         <div class="section-title">
-                            <h4>Admin Profile</h4>
+                            <h4>Postbacks</h4>
                         </div>
                     </div>
 					<?php if(APP_DEMO) { include_once 'inc/demo-notice.php'; } ?>
 					
 					<!-- START MAIN CONTENT HERE -->
 					
-					<div class="col-md-4">
-                        <div class="block mb-4" style="box-shadow: 0 7px 15px var(--primary-alpha-Dot25); transition: all 0.3s;">
-							<div class="user-profile-menu bg-white">
-								<div class="avatar-info">
-									<img class="profile-img rounded-circle" id="adminImage" align="middle" src="images/<?php echo $configs->getConfig('ADMIN_IMAGE'); ?>" alt="profile image" style="width: 168px; height: 168px;" />
-									<h4 class="name"><?php echo $helper->getAdminFullName($acid); ?></h4>
-									<p class="designation">Admin</p>
-								</div>
-							</div>
-							
-						</div>
-					</div>
-					
-                    <div class="col-md-8">
+                    <div class="col-md-12">
                         <div class="block form-block mb-4">
-                            <div class="block-heading">
-                                <h5>Admin Details</h5>
+                            <div class="block-heading" style="border: none;">
+                                <h5>Postbacks S2S ( Server to Server )</h5>
+                                <p class="mt-2">Whenever a user completes an offer, the AdNetworks will send a URL request, called a 'Server to Server Postback' with some information. Using this information, we can Reward the user who performed/completed the action/offer accordingly.
+                                To receive a successful postback request, you need to give below url's as a postback url for each AdNetwork Accordingly or else user will not be rewarded. Please Read the Documentation for more information on it.<br><br>
+                                The Below URL's are given asuming that the postback files are in the folder named <strong>postbacks</strong>. Incase if you change the postbacks folder name to something else, then you need to change the same in the url while giving it to the AdNetworks ..</p>
                             </div>
-
-                            <form action="process/profile.php" method="post" enctype="multipart/form-data" class="horizontal-form"/>
-							
-                                <div class="form-group">
-                                    <div class="form-row">
-                                        <label class="col-md-3">Admin Name</label>
-                                        <div class="col-md-9">
-                                            <input class="form-control" name="admin_name" placeholder="Full name" value="<?php echo $helper->getAdminFullName($acid); ?>" type="text" autocomplete="off" required=""/>
-                                        </div>
-                                    </div>
-                                </div>
-							
-                                <div class="form-group">
-                                    <div class="form-row">
-                                        <label class="col-md-3">Admin Image</label>
-                                        <div class="col-md-9">
-                                            <div class="input-group">
-                                                <input id="admin_image_name" class="form-control" type="text" name="admin_image_name" value="<?php echo $configs->getConfig('ADMIN_IMAGE'); ?>" placeholder="Choose Image" style="background: #e9ecef; " autocomplete="off" disabled/>
-												<span class="input-group-addon text-dark"><label for="file-upload" class="custom-file-upload"><i class="ion-ios-folder"></i><span>Change Image</span></label>
-													<input id="file-upload" onchange="readURL(this);" name="admin_image" accept="image/png, image/jpeg, image/jpg" type="file"/>
-												</span>
-											</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <hr />
-                                <button class="btn btn-primary mr-0 pull-right" type="submit" value="upload">Update Details</button>
-								<br><br>
-                            </form>
-                        </div>
-						
-                        <div class="block form-block mb-4">
-                            <div class="block-heading">
-                                <h5>Change Password</h5>
-                            </div>
-							
-							<?php if ($data){ ?>
-						
-								<div class="alert <?php if($error){ echo "alert-danger"; }else{ echo "alert-success"; } ?>">
-									<?php echo $error_message; ?>
-								</div>
-							
-							<?php } ?>
-
-                            <form action="" method="post" />
+                            
+                            <form action="" method="post" class="horizontal-form">
+                                
+                                <h5 class="block-bw-heading">AdMantum</h5>
                                 
                                 <div class="form-group">
-                                    <label>Old Password</label>
-                                    <input class="form-control" placeholder="Old Password" type="password" name="old_pass" required=""/>
+                                    <div class="form-row">
+                                        <label class="col-md-2">Postback URL</label>
+                                        <div class="col-md-10">
+                                            <input name="oftro_pb" class="form-control" value="<?php echo $configs->getConfig('WEB_ROOT'); ?>postbacks/admantum.php?user_id={uid}&amount={virtual_currency}" type="text" autocomplete="off" required="" style="background: #e9ecef; " disabled/>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="block-bw-heading">Wannads</h5>
+                                
+                                <div class="form-group">
+                                    <div class="form-row">
+                                        <label class="col-md-2">Postback URL</label>
+                                        <div class="col-md-10">
+                                            <input name="oftro_pb" class="form-control" value="<?php echo $configs->getConfig('WEB_ROOT'); ?>postbacks/wannads.php" type="text" autocomplete="off" required="" style="background: #e9ecef; " disabled/>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="block-bw-heading">CpaLead</h5>
+                                
+                                <div class="form-group">
+                                    <div class="form-row">
+                                        <label class="col-md-2">Postback URL</label>
+                                        <div class="col-md-10">
+                                            <input name="oftro_pb" class="form-control" value="<?php echo $configs->getConfig('WEB_ROOT'); ?>postbacks/cpalead.php?subid={subid}&subid2={subid2}&virtual_currency={virtual_currency}" type="text" autocomplete="off" required="" style="background: #e9ecef; " disabled/>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="block-bw-heading">AdGatemedia</h5>
+                                
+                                <div class="form-group">
+                                    <div class="form-row">
+                                        <label class="col-md-2">Postbacks URL</label>
+                                        <div class="col-md-10">
+                                            <input name="oftro_pb" class="form-control" value="<?php echo $configs->getConfig('WEB_ROOT'); ?>postbacks/adgatemedia.php?tx_id={transaction_id}&user_id={s2}&point_value={points}&usd_value={payout}&offer_title={vc_title}" type="text" autocomplete="off" required="" style="background: #e9ecef; " disabled/>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="block-bw-heading">AdscendMedia</h5>
+                                
+                                <div class="form-group">
+                                    <div class="form-row">
+                                        <label class="col-md-2">Postbacks URL</label>
+                                        <div class="col-md-10">
+                                            <input name="oftro_pb" class="form-control" value="<?php echo $configs->getConfig('WEB_ROOT'); ?>postbacks/adscendmedia.php?offerid=[OID]&name=[ONM]&rate=[CUR]&sub1=[SB1]" type="text" autocomplete="off" required="" style="background: #e9ecef; " disabled/>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="block-bw-heading">KiwiWall</h5>
+                                
+                                <div class="form-group">
+                                    <div class="form-row">
+                                        <label class="col-md-2">Postbacks URL</label>
+                                        <div class="col-md-10">
+                                            <input name="oftro_pb" class="form-control" value="<?php echo $configs->getConfig('WEB_ROOT'); ?>postbacks/kiwiwall.php" type="text" autocomplete="off" required="" style="background: #e9ecef; " disabled/>
+                                        </div>
+                                    </div>
                                 </div>
 								
-                                <div class="form-row">
-                                    <div class="form-group col-md-6">
-                                        <label>New Password</label>
-                                        <input class="form-control" placeholder="New Password" type="password" name="new_pass" required=""/>
-                                    </div>
-									
-                                    <div class="form-group col-md-6">
-                                        <label>Confirm New Password</label>
-                                        <input class="form-control" placeholder="Confirm New password" type="password" name="cnf_pass" required=""/>
-                                    </div>
-									
-                                </div>
-
-                                <hr />
-                                <button class="btn btn-primary mr-0 pull-right" type="submit">Change Password</button>
+                                <hr/>
 								<br><br>
                             </form>
                         </div>
                     </div>
-					
+	
 					
 					<!-- END MAIN CONTENT HERE -->
 					<?php include_once 'inc/support.php'; ?>
@@ -278,28 +227,6 @@
 
 <!--- Main JS -->
 <script src="./assets/js/main.js"></script>
-<script type="text/javascript">
-
-
-function readURL(input) {
-	
-	if (input.files && input.files[0]) {
-		
-		var reader = new FileReader();
-		
-		reader.onload = function (e) {
-			$('#adminImage')
-				.attr('src', e.target.result)
-				.width(168)
-				.height(168);
-			};
-		reader.readAsDataURL(input.files[0]);
-		$('#admin_image_name').val(input.files[0].name);
-		$('#admin_image_name').prop('disabled', false);
-	}
-}
-
-</script>
 
 </body>
 </html>

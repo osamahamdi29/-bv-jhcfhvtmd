@@ -9,63 +9,104 @@
 	 * Copyright 2019 DroidOXY ( http://www.droidoxy.com )
 	 */
 	 
-	include_once("core/init.inc.php");
+	 include_once("core/init.inc.php");
 
-    if (admin::isSession()) {
+	if (admin::isSession()) {
 
-        header("Location: admin.php");
-    }
+		header("Location: admin.php");
+	}
+
+	$admin = new admin($dbo);
+
+	if ($admin->getCount() > 0) {
+
+		header("Location: login.php");
+	}
 	
+	$error = false;
+	$error_message = array();
+
 	$user_username = '';
+	$user_fullname = '';
+	$user_password = '';
+	$user_password_repeat = '';
 
-    $error = false;
-    $error_message = '';
-	$configs = new functions($dbo);
+	$error_token = false;
+	$error_username = false;
+	$error_fullname = false;
+	$error_password = false;
+	$error_password_repeat = false;
 
-    if (!empty($_POST)) {
+	if (!empty($_POST)) {
 
-        $user_username = isset($_POST['user_username']) ? $_POST['user_username'] : '';
-        $user_password = isset($_POST['user_password']) ? $_POST['user_password'] : '';
-        $token = isset($_POST['authenticity_token']) ? $_POST['authenticity_token'] : '';
+		$error = false;
 
-        $user_username = helper::clearText($user_username);
-        $user_password = helper::clearText($user_password);
+		$user_username = isset($_POST['user_username']) ? $_POST['user_username'] : '';
+		$user_password = isset($_POST['user_password']) ? $_POST['user_password'] : '';
+		$user_fullname = isset($_POST['user_fullname']) ? $_POST['user_fullname'] : '';
+		$token = isset($_POST['authenticity_token']) ? $_POST['authenticity_token'] : '';
 
-        $user_username = helper::escapeText($user_username);
-        $user_password = helper::escapeText($user_password);
+		$user_username = helper::clearText($user_username);
+		$user_fullname = helper::clearText($user_fullname);
+		$user_password = helper::clearText($user_password);
+		$user_password_repeat = helper::clearText($user_password_repeat);
 
-        if (helper::getAuthenticityToken() !== $token) {
+		$user_username = helper::escapeText($user_username);
+		$user_fullname = helper::escapeText($user_fullname);
+		$user_password = helper::escapeText($user_password);
+		$user_password_repeat = helper::escapeText($user_password_repeat);
 
-            $error = true;
-            $error_message = 'Some Error, Try Again';
-        }
+		if (helper::getAuthenticityToken() !== $token) {
 
-        if (!$error) {
+			$error = true;
+			$error_token = true;
+			$error_message[] = 'Error!';
+		}
 
-            $access_data = array();
+		if (!helper::isCorrectLogin($user_username)) {
 
-            $admin = new admin($dbo);
-            $access_data = $admin->signin($user_username, $user_password);
+			$error = true;
+			$error_username = true;
+			$error_message[] = 'Username Should be 5 Characters or more';
+		}
 
-            if ($access_data['error'] === false){
+		if (!helper::isCorrectPassword($user_password)) {
 
-                $clientId = 0; // Desktop version
+			$error = true;
+			$error_password = true;
+			if(strlen($user_password) < 6){
+				$error_message[] = 'Password Should be 6 Characters or more';
+			}else{
+				$error_message[] = 'Password Should not contain any symbols like ( @ * - & . )';
+			}
+		}
 
-                admin::createAccessToken();
+		if (!$error) {
 
-                admin::setSession($access_data['accountId'], admin::getAccessToken());
-				
-				header("Location: admin.php");
+			$admin = new admin($dbo);
 
-            } else {
+			$result = array();
+			$result = $admin->signup($user_username, $user_password, $user_fullname);
 
-                $error = true;
-                $error_message = 'Incorrect login or password.';
-            }
-        }
-    }
+			if ($result['error'] === false) {
 
-    helper::newAuthenticityToken();
+				$access_data = $admin->signin($user_username, $user_password);
+
+				if ($access_data['error'] === false) {
+
+					$clientId = 0; // Desktop version
+
+					admin::createAccessToken();
+
+					admin::setSession($access_data['accountId'], admin::getAccessToken());
+
+					header("Location: admin.php");
+				}
+			}
+		}
+	}
+
+	helper::newAuthenticityToken();
 
 ?>
 <!DOCTYPE html>
@@ -98,8 +139,6 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" /></head>
 <body>
 
-<?php include_once 'inc/preloader.php'; ?>
-
 <section style="background: url(assets/images/bg.jpg);background-size: cover">
     <div class="height-100-vh bg-primary-trans">
         <div class="container-fluid">
@@ -110,17 +149,25 @@
 						<?php if ($error){ ?>
 						
 							<div class="alert alert-danger">
-								<?php echo $error_message; ?>
+								<?php 
+								foreach ($error_message as $msg) {
+									echo $msg . "<br />";
+								} ?>
 							</div>
 							
 						<?php } ?>
-                        <p class="logo mb-1">Admin Login</p>
-                        <p class="mb-4" style="color: #a5b5c5">Sign into your <?php echo $configs->getConfig('APP_NAME'); ?> Dashboard</p>
-                        <form id="needs-validation" action="login.php" method="post" novalidate="" />
+                        <p class="logo mb-1">Create Admin Account</p>
+                        <p class="mb-4" style="color: #a5b5c5">Remember that now Creating an account for Admin Login!</p>
+                        <form id="needs-validation" action="account.php" method="post" novalidate="" />
                             <input autocomplete="off" type="hidden" name="authenticity_token" value="<?php echo helper::getAuthenticityToken(); ?>">
 							<div class="form-group">
-                                <label>Login</label>
-                                <input class="form-control input-lg" placeholder="Username" maxlength="24" id="user_username" name="user_username" type="text" value="<?php echo $user_username; ?>" required="" />
+                                <label>Full Name</label>
+                                <input class="form-control input-lg" placeholder="Full Name" maxlength="24" id="user_fullname" name="user_fullname" type="text" value="<?php echo $user_fullname; ?>" required="" />
+                                <div class="invalid-feedback">This field is required.</div>
+                            </div>
+							<div class="form-group">
+                                <label>User Name</label>
+                                <input class="form-control input-lg" placeholder="User Name" maxlength="24" id="user_username" name="user_username" type="text" value="<?php echo $user_username; ?>" required="" />
                                 <div class="invalid-feedback">This field is required.</div>
                             </div>
                             <div class="form-group">
@@ -128,7 +175,7 @@
                                 <input class="form-control input-lg" autocomplete="off" placeholder="Password" type="password" id="user_password" maxlength="20" name="user_password" required="" />
                                 <div class="invalid-feedback">This field is required.</div>
                             </div>
-                            <button type="submit" class="btn btn-primary mt-2">Sign In</button>
+                            <button type="submit" class="btn btn-primary mt-2">Create Admin Account</button>
 
                         </form>
                     </div>
